@@ -18,6 +18,7 @@
     "seed:reset": "tsx scripts/reset-demo.ts",
     "score": "tsx scripts/score-candidates.ts",
     "transcripts": "tsx scripts/generate-transcripts.ts",
+    "analyze": "tsx scripts/analyze-interviews.ts",
     "db:types": "supabase gen types typescript --linked > packages/db/types.ts"
   },
   "dependencies": {

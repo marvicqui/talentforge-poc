@@ -12,7 +12,7 @@ Estado actual del deployment por fase. Se actualiza al cerrar cada fase.
 | 3 | Job Analyzer + `/try-it-now` + Vercel | ✅ Completada | Producción en `talentforge-poc.vercel.app`; `/try-it-now` streamea ICP por SSE desde Claude Haiku 4.5. Auto-deploy GitHub pendiente (manual GitHub App install). |
 | 4 | Candidate Ranker | ✅ Completada | 30/30 candidatos scoreados con Claude Haiku 4.5. Mean 71.7, distribución 7 strong_yes / 13 yes / 4 maybe / 6 no. Sanitización anti-bias activa. UI /jobs/[id] y /candidates/[id] funcionales. |
 | 5 | Transcripciones (12) | ✅ Completada | 12/12 transcripciones diarizadas (23-49 min cada una) calibradas 1 strong_yes / 1 yes / 1 maybe_no por job. 11 mixed-language, 1 español puro. Avg ~16K chars (~2500 palabras). |
-| 6 | Interview Analyzer + PDF | ⏳ Pendiente | — |
+| 6 | Interview Analyzer + PDF | ✅ Completada | 12/12 reports con citas+timestamps. Vista `/interviews/[id]` con transcript clickeable + tabs. PDF en Next.js API route. ADR-006 documenta el cambio Edge Function → API route. |
 | 7 | Reporte comparativo + Question Generator | ⏳ Pendiente | — |
 | 8 | Outreach + Twilio | ⏳ Pendiente | Requiere credenciales Twilio y número verificado. |
 | 9 | CI/CD + docs comerciales | ⏳ Pendiente | Aplicar `scripts/setup-branch-ruleset.sh` cuando el repo se haga público. |
@@ -262,6 +262,62 @@ calibración del seed (3 recommended por job son los mejor scoreados).
 Fase 6 (Interview Analyzer) consume estas transcripciones y produce el report
 con `english_level`, `technical_score`, `softskill_score`, `red_flags`,
 `strengths`, citas con timestamps, y `recommendation`.
+
+## Fase 6 — detalle
+
+### Interview Analyzer Agent
+- ✅ [`prompts/interview-analyzer.md`](../packages/agents/prompts/interview-analyzer.md) +
+  inline `.ts`. Contrato explícito: cada score numérico requiere ≥1
+  cita textual del candidato con `start_ms`. Anti-bias reforzado.
+- ✅ Schema Zod ([`schemas/interview-analyzer.ts`](../packages/agents/schemas/interview-analyzer.ts)):
+  `english_level (CEFR)`, `english_breakdown` (grammar/fluency/vocabulary/
+  pronunciation con score + quotes), `technical_score[]` (hasta 6 skills),
+  `softskill_score` (4 dimensiones), `red_flags[]`, `strengths[]`, `summary`,
+  `recommendation`. `evidence_quote` nullish para tolerar `null` explícito del
+  modelo.
+- ✅ Runner: single-shot, max_tokens 6500 (subido tras truncamientos).
+
+### Bulk analyzer
+- ✅ [`scripts/analyze-interviews.ts`](../scripts/analyze-interviews.ts) con
+  `--force` y `--only <slug>`. Idempotente: skip si ya hay report.
+- ✅ Workaround Postgrest: hay dos FK entre `interviews` y `transcripts`
+  (transcripts.interview_id ↔ interviews.transcript_id) lo que hace ambigua
+  la embedding; se hacen dos queries.
+- ✅ 12/12 reports generados (2 reintentos por max_tokens / nullable quote).
+
+### Resultados
+| Métrica | Valor |
+|---------|-------|
+| Reports | 12/12 |
+| English levels | B2: 10, C1: 2 |
+| Recommendations | strong_yes: 9, yes: 2, maybe: 1 |
+
+Nota de calibración: el Analyzer fue más optimista que la calibración del
+seed (3 strong_yes esperados, 3 yes, 3 maybe_no). El contenido textual del
+report sí diverge correctamente (red_flags, technical_score por skill), pero
+la `recommendation` final converge. Iteración futura: endurecer el prompt o
+usar Sonnet para casos críticos.
+
+### UI agregada
+- ✅ [`/interviews/[id]`](../apps/web/app/(app)/interviews/[id]/page.tsx) con
+  layout split (izquierda transcript, derecha report).
+  Cliente: [`interview-report-view.tsx`](../apps/web/app/(app)/interviews/[id]/interview-report-view.tsx)
+  con 5 tabs (Resumen, English, Técnico, Soft, Red flags) y **citas
+  clickeables** que hacen scroll + highlight del segmento exacto en la
+  transcripción.
+
+### PDF
+- Decisión: ADR-006 — PDF en Next.js API route, no Supabase Edge Function.
+- Implementación:
+  - [`lib/pdf/interview-report-document.tsx`](../apps/web/lib/pdf/interview-report-document.tsx)
+    con componentes `@react-pdf/renderer` (Document/Page/View/Text).
+  - [`/api/interview-report/[id]/pdf/route.ts`](../apps/web/app/api/interview-report/[id]/pdf/route.ts)
+    Node runtime, auth-protegido, devuelve `application/pdf`.
+- `next.config.mjs` agrega `serverComponentsExternalPackages: ["@react-pdf/renderer"]`
+  para evitar tree-shake problemático.
+
+### Costos
+- 12 análisis con Claude Haiku 4.5 ≈ $0.20 USD.
 
 ## Secretos esperados
 
