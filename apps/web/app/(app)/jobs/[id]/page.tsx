@@ -197,7 +197,16 @@ function CandidatesTab({
         <p className="text-sm text-muted-foreground">
           {scored}/{apps.length} candidatos puntuados por IA. Ordenados por score.
         </p>
-        <ScoreExplainer />
+        <div className="flex items-center gap-2 flex-wrap">
+          <a
+            href={`/api/jobs/${jobId}/export-csv`}
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
+            title="Descargar el ranking completo en CSV"
+          >
+            ⬇ Exportar CSV
+          </a>
+          <ScoreExplainer />
+        </div>
       </div>
       <div className="overflow-x-auto rounded-md border border-border">
         <table className="w-full text-sm">

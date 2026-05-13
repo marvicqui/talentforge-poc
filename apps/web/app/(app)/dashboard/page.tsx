@@ -156,7 +156,7 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        <section>
+        <section className="grid gap-3 md:grid-cols-2">
           <Link
             href="/try-it-now"
             className="block rounded-md border border-dashed border-primary/40 bg-primary/5 p-5 hover:bg-primary/10 transition-colors"
@@ -171,6 +171,27 @@ export default async function DashboardPage() {
               Demo público compartible: <code>/try-it-now</code>
             </p>
           </Link>
+
+          <div className="rounded-md border border-dashed border-border bg-secondary/30 p-5">
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Próximamente
+              </p>
+              <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                v2
+              </span>
+            </div>
+            <h3 className="mt-1 text-base font-medium text-foreground">
+              Integración LinkedIn nativa
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Carga candidatos directamente desde LinkedIn Recruiter sin
+              copiar/pegar. Greenhouse, Lever y Workable también.{" "}
+              <Link href="/roadmap" className="underline">
+                Ver roadmap →
+              </Link>
+            </p>
+          </div>
         </section>
       </div>
     </main>
