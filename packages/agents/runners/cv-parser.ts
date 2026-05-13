@@ -29,29 +29,31 @@ export async function parseCv(
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY missing");
   const client = new Anthropic({ apiKey });
 
+  // The `document` content type is supported by the Anthropic API for PDFs
+  // (native PDF input). The TS types in @anthropic-ai/sdk ^0.30 don't yet
+  // include it in the public union, so we widen via an `unknown` cast.
+  const userContent: unknown = [
+    {
+      type: "document",
+      source: {
+        type: "base64",
+        media_type: "application/pdf",
+        data: opts.pdfBase64,
+      },
+    },
+    {
+      type: "text",
+      text: "Extract the structured profile from this CV and return only the JSON object.",
+    },
+  ];
+
   const response = await client.messages.create(
     {
       model: getModel(),
       max_tokens: 4000,
       system: CV_PARSER_SYSTEM_PROMPT,
       messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "document",
-              source: {
-                type: "base64",
-                media_type: "application/pdf",
-                data: opts.pdfBase64,
-              },
-            },
-            {
-              type: "text",
-              text: "Extract the structured profile from this CV and return only the JSON object.",
-            },
-          ],
-        },
+        { role: "user", content: userContent as never },
         { role: "assistant", content: ASSISTANT_PREFILL },
       ],
     },
