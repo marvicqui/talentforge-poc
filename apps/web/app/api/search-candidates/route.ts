@@ -83,8 +83,17 @@ export async function POST(request: Request) {
     )
     .in("id", ids);
 
-  const candMap = new Map<string, (typeof candData)[number]>();
-  for (const c of candData ?? []) candMap.set(c.id, c);
+  type AppLite = { match_score: number | null; jobs: { id: string; title: string } | null };
+  type CandRow = {
+    id: string;
+    full_name: string;
+    country: string | null;
+    seniority: string | null;
+    english_cefr: string | null;
+    applications: AppLite[] | null;
+  };
+  const candMap = new Map<string, CandRow>();
+  for (const c of (candData ?? []) as CandRow[]) candMap.set(c.id, c);
 
   const hits: SearchHit[] = (matches ?? [])
     .map(
@@ -92,17 +101,11 @@ export async function POST(request: Request) {
         const c = candMap.get(m.candidate_id);
         if (!c) return null;
         const apps = c.applications ?? [];
-        const best = apps.reduce(
-          (
-            acc: { match_score: number | null; jobs: { id: string; title: string } | null } | null,
-            cur,
-          ) => {
-            if (!acc) return cur;
-            if ((cur.match_score ?? -1) > (acc.match_score ?? -1)) return cur;
-            return acc;
-          },
-          null,
-        );
+        const best = apps.reduce<AppLite | null>((acc, cur) => {
+          if (!acc) return cur;
+          if ((cur.match_score ?? -1) > (acc.match_score ?? -1)) return cur;
+          return acc;
+        }, null);
         return {
           candidate_id: c.id,
           similarity: m.similarity,
