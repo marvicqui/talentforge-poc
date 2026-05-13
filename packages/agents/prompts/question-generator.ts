@@ -27,6 +27,9 @@ RULES:
 3. Don't ask about gender, age, family, or nationality.
 4. practical_case is a paragraph context + 3-5 sub-prompts.
 5. Total estimated time: 45-60 minutes.
+6. BREVITY: each signal item must fit in <= 120 characters. Use short bullets, not full paragraphs. The full JSON must fit comfortably within 6000 tokens; if you find yourself approaching that, shorten signals first.
+7. Limit technical_core to AT MOST 5 questions (was 5-7; trimmed for output budget).
+8. practical_case_subprompts: AT MOST 5 items.
 
 OUTPUT SCHEMA:
 

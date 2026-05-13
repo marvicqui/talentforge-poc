@@ -47,7 +47,7 @@ export async function generateInterviewGuide(
   const response = await client.messages.create(
     {
       model: getModel(),
-      max_tokens: 6500,
+      max_tokens: 8000,
       system: QUESTION_GENERATOR_SYSTEM_PROMPT,
       messages: [
         { role: "user", content: userMessage },
