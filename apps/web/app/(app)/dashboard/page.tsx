@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { DashboardCharts } from "@/components/dashboard-charts";
+import { SemanticSearch } from "@/components/semantic-search";
 import { fmtModality, fmtSalary, fmtStage, scoreColorClass } from "@/lib/format";
 
 export const metadata = { title: "Dashboard — TalentForge AI" };
@@ -126,6 +127,8 @@ export default async function DashboardPage() {
           <Metric label="Scoreados por IA" value={scoredCount ?? 0} />
           <Metric label="Horas ahorradas" value={`${hoursSaved}h`} hint={`${interviewsAnalyzed} entrevistas × 2.5h`} />
         </section>
+
+        <SemanticSearch />
 
         <section className="space-y-3">
           <h2 className="text-lg font-medium text-foreground">Vacantes</h2>

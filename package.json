@@ -19,9 +19,11 @@
     "score": "tsx scripts/score-candidates.ts",
     "transcripts": "tsx scripts/generate-transcripts.ts",
     "analyze": "tsx scripts/analyze-interviews.ts",
+    "demo:cvs": "tsx scripts/generate-demo-cvs.ts",
     "db:types": "supabase gen types typescript --linked > packages/db/types.ts"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.1.5",
     "@supabase/supabase-js": "^2.45.4",
     "@talentforge/db": "workspace:*",
     "@types/ws": "^8.18.1",

@@ -19,6 +19,15 @@ const MAX_FILES = 10;
 const MAX_BYTES = 5 * 1024 * 1024;
 const CONCURRENCY = 3;
 
+const DEMO_CV_FILES = [
+  "valeria-rojas.pdf",
+  "ramiro-cossio.pdf",
+  "lucas-mendez.pdf",
+  "andrea-paredes.pdf",
+  "jose-vargas.pdf",
+  "carla-figueroa.pdf",
+];
+
 export function ImportForm({
   jobId,
   jobTitle,
@@ -57,6 +66,24 @@ export function ImportForm({
     e.preventDefault();
     if (e.dataTransfer.files?.length) accept(e.dataTransfer.files);
   };
+
+  async function loadDemoPreset() {
+    setFiles([]);
+    setResults(new Map());
+    setDone(false);
+    try {
+      const loaded: File[] = [];
+      for (const name of DEMO_CV_FILES) {
+        const res = await fetch(`/demo-cvs/${name}`);
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        loaded.push(new File([blob], name, { type: "application/pdf" }));
+      }
+      setFiles(loaded);
+    } catch {
+      // ignore
+    }
+  }
 
   async function processOne(file: File) {
     setResults((cur) =>
@@ -117,6 +144,25 @@ export function ImportForm({
 
   return (
     <div className="space-y-5">
+      <div className="rounded-md border border-primary/40 bg-primary/5 p-3 flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <p className="text-sm font-medium text-foreground">
+            ¿No tenés CVs a mano para el demo?
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Cargamos 6 candidatos sintéticos con calidad variable (strong yes,
+            yes, maybe, no) — perfecto para mostrar el spread del scoring.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={loadDemoPreset}
+          className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          🎬 Cargar 6 CVs demo
+        </button>
+      </div>
+
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={onDrop}
