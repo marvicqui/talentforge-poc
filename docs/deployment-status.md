@@ -9,7 +9,7 @@ Estado actual del deployment por fase. Se actualiza al cerrar cada fase.
 | 0 | Bootstrap + GitHub | ✅ Completada | Monorepo verde local; repo en GitHub privado. Branch protection aplazada (ADR-004). |
 | 1 | DB + Auth + Supabase Cloud | ✅ Completada | Proyecto cloud creado, schema completo aplicado, auth + RLS verificados con curl. Build local OOM por presión de RAM/disco del Mac → validación delegada a GitHub Actions. |
 | 2 | Mock data | ✅ Completada | 4 jobs + 30 candidates + 30 profiles + 30 applications + embeddings OpenAI 1536d. Distribución de etapas alineada con sección 7.2 del prompt. |
-| 3 | Job Analyzer + `/try-it-now` + Vercel | ⏳ Pendiente | Requiere `VERCEL_TOKEN`. |
+| 3 | Job Analyzer + `/try-it-now` + Vercel | ✅ Completada | Producción en `talentforge-poc.vercel.app`; `/try-it-now` streamea ICP por SSE desde Claude Haiku 4.5. Auto-deploy GitHub pendiente (manual GitHub App install). |
 | 4 | Candidate Ranker | ⏳ Pendiente | — |
 | 5 | Transcripciones (12) | ⏳ Pendiente | — |
 | 6 | Interview Analyzer + PDF | ⏳ Pendiente | — |
@@ -120,6 +120,54 @@ Estado actual del deployment por fase. Se actualiza al cerrar cada fase.
 | `GET /rest/v1/jobs?order=salary_max_usd.desc` | 4 jobs en orden esperado. |
 | `GET /rest/v1/applications?select=stage` | Counter: recommended=12, scheduled=5, interested=4, new=4, interviewed=3, contacted=2. |
 | Counts verificación interna (`pnpm seed`) | jobs:4, candidates:30, candidate_profiles:30, applications:30 ✓ |
+
+## Fase 3 — detalle
+
+### Job Analyzer Agent
+- ✅ Prompt: [`packages/agents/prompts/job-analyzer.md`](../packages/agents/prompts/job-analyzer.md)
+  (humano) + [`packages/agents/prompts/job-analyzer.ts`](../packages/agents/prompts/job-analyzer.ts)
+  (runtime, inlined para sobrevivir bundling).
+- ✅ Schema Zod: [`packages/agents/schemas/job-analyzer.ts`](../packages/agents/schemas/job-analyzer.ts)
+  con `JobAnalyzerOutputSchema` (title, seniority, must/nice/soft skills, languages CEFR,
+  years_experience_min, modality, red_flags_to_avoid, ideal_candidate_summary).
+- ✅ Runner streaming: [`packages/agents/runners/job-analyzer.ts`](../packages/agents/runners/job-analyzer.ts)
+  con prefill `{` para garantizar JSON válido y `client.messages.stream` de Anthropic SDK.
+
+### Endpoint + UI
+- ✅ [`POST /api/analyze-jd`](../apps/web/app/api/analyze-jd/route.ts) responde
+  `text/event-stream`. Frames: `data: {"type":"delta","text":"..."}\n\n` y al final
+  `data: {"type":"done","parsed":{...}}\n\n`.
+- ✅ [`/try-it-now`](../apps/web/app/try-it-now/page.tsx) (pública) con textarea +
+  sample JD pre-cargado, consumidor SSE en cliente, visualización del ICP con cards
+  (must/nice/soft/red-flags) y CTA sticky con Calendly opcional.
+
+### Vercel
+- ✅ Proyecto: `mario-vicente-s-projects/talentforge-poc` (Hobby).
+- ✅ Configuración aplicada vía API: `rootDirectory=apps/web`, `framework=nextjs`.
+- ✅ 9 env vars (8 + NEXT_PUBLIC_APP_URL): `NEXT_PUBLIC_SUPABASE_URL`,
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`,
+  `ANTHROPIC_MODEL`, `EMBEDDINGS_PROVIDER`, `OPENAI_API_KEY`, `DEMO_USER_EMAIL`,
+  `NEXT_PUBLIC_APP_URL` — todas en production/preview/development.
+- ✅ Producción: **https://talentforge-poc.vercel.app** (aliased) /
+  https://talentforge-izfgpi1sh-mario-vicente-s-projects.vercel.app (técnica).
+- ✅ Build remoto en Vercel: 46s (`pnpm install` + `turbo run build` + Next.js).
+
+### Smoke tests en producción
+| Test | Resultado |
+|------|-----------|
+| `GET /try-it-now` | 200, contiene "Pruébalo con tu propia vacante" |
+| `POST /api/analyze-jd` (JD corta) | SSE válido: deltas + `done` con `parsed` Zod-validado. ICP correcto: title, seniority=senior, must-haves React/TS/Next.js, modality=remote, summary en español neutro. |
+
+### Pendiente: Auto-deploy en push a `main`
+- Vercel CLI intentó conectar el repo automáticamente y falló con
+  `Failed to connect marvicqui/talentforge-poc to project` — la **Vercel GitHub App**
+  necesita instalarse en el repo privado.
+- **Fix manual** (5 min):
+  1. Ir a https://github.com/apps/vercel → "Install".
+  2. Seleccionar **Only select repositories** → `marvicqui/talentforge-poc`.
+  3. Volver al dashboard Vercel del proyecto → Settings → Git → conectar repo.
+- Una vez conectado: push a `main` → producción automática, PR → preview deploy.
+- Mientras tanto: `pnpm dlx vercel@latest deploy --prod --yes` (manual desde local).
 
 ## Secretos esperados
 

@@ -46,3 +46,4 @@ yarn-error.log*
 # Local artifacts
 .cache/
 tmp/
+.vercel
