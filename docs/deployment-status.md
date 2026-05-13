@@ -11,7 +11,7 @@ Estado actual del deployment por fase. Se actualiza al cerrar cada fase.
 | 2 | Mock data | ✅ Completada | 4 jobs + 30 candidates + 30 profiles + 30 applications + embeddings OpenAI 1536d. Distribución de etapas alineada con sección 7.2 del prompt. |
 | 3 | Job Analyzer + `/try-it-now` + Vercel | ✅ Completada | Producción en `talentforge-poc.vercel.app`; `/try-it-now` streamea ICP por SSE desde Claude Haiku 4.5. Auto-deploy GitHub pendiente (manual GitHub App install). |
 | 4 | Candidate Ranker | ✅ Completada | 30/30 candidatos scoreados con Claude Haiku 4.5. Mean 71.7, distribución 7 strong_yes / 13 yes / 4 maybe / 6 no. Sanitización anti-bias activa. UI /jobs/[id] y /candidates/[id] funcionales. |
-| 5 | Transcripciones (12) | ⏳ Pendiente | — |
+| 5 | Transcripciones (12) | ✅ Completada | 12/12 transcripciones diarizadas (23-49 min cada una) calibradas 1 strong_yes / 1 yes / 1 maybe_no por job. 11 mixed-language, 1 español puro. Avg ~16K chars (~2500 palabras). |
 | 6 | Interview Analyzer + PDF | ⏳ Pendiente | — |
 | 7 | Reporte comparativo + Question Generator | ⏳ Pendiente | — |
 | 8 | Outreach + Twilio | ⏳ Pendiente | Requiere credenciales Twilio y número verificado. |
@@ -218,6 +218,50 @@ calibración del seed (3 recommended por job son los mejor scoreados).
 
 ### Costo estimado
 ~30 llamadas a Haiku 4.5 + reintentos ≈ $0.10 USD.
+
+## Fase 5 — detalle
+
+### Generador de transcripciones
+- [`scripts/seed/transcript-generator.ts`](../scripts/seed/transcript-generator.ts):
+  agente helper (vive en `scripts/` porque es código de seed, no producción).
+  Toma `{job, candidate, calibration, targetMinutes}` y devuelve `segments[]`
+  con `speaker | language | duration_seconds | text`. Post-process convierte a
+  `start_ms/end_ms` absolutos.
+- System prompt define 6 fases (intro, background, técnica core, caso práctico,
+  STAR, cierre), calibración explícita (strong_yes / yes / maybe_no) y reglas
+  de mezcla de idioma por CEFR del candidato.
+
+### Orquestador
+- [`scripts/generate-transcripts.ts`](../scripts/generate-transcripts.ts):
+  para cada job, toma los 3 `recommended` ordenados por `match_score` desc y
+  asigna calibración: top→strong_yes, mid→yes, bottom→maybe_no.
+- Persiste:
+  - `interviews` row con `status='completed'`, `scheduled_at` (escalonado
+    8-30 días atrás), `duration_minutes` (de los timestamps).
+  - `transcripts` row con `segments` jsonb, `raw_text` concatenado.
+  - Vincula `interviews.transcript_id` ← `transcripts.id`.
+- Idempotente: skip si ya hay transcript para `(candidate_id, job_id)` salvo
+  `--force`.
+- Comandos: `pnpm transcripts`, `--only <slug>`, `--force`.
+
+### Resultados
+| Job | Strong yes | Yes | Maybe / no |
+|-----|------------|-----|------------|
+| AI/ML — Lumina | Mariana Castillo Vargas (94) | Diego Salazar Mendoza (82) | Camila Fernández Aguirre (78) |
+| Azure — Cresta | Felipe Cuevas Larraín (92) | Patricia Velasco Ortiz (88) | Roberto Núñez Acevedo (76) |
+| DevOps — Volcán | Joaquín Iribarren Suárez (94) | Sofía Bermúdez Lara (88) | Tomás Errázuriz Donoso (82) |
+| Full-Stack — Brújula | Daniela Espinosa Mancilla (92) | Laura Buitrago Marín (82) | Pedro Granados Salazar (82) |
+
+- 12/12 generadas, 0 fallos.
+- Duración media: ~38 min equivalentes. Min 23, max 49.
+- Idiomas: 11 mixed (es+en), 1 puro español (Elena Romero A2 no fue elegida
+  porque no es recommended; los strong_yes/yes/maybe-no caen en C1/C2 mayormente).
+- Costo: ~$0.30 USD en Anthropic.
+
+### Próximo paso
+Fase 6 (Interview Analyzer) consume estas transcripciones y produce el report
+con `english_level`, `technical_score`, `softskill_score`, `red_flags`,
+`strengths`, citas con timestamps, y `recommendation`.
 
 ## Secretos esperados
 
