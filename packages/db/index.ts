@@ -1,1 +1,7 @@
-export type { Database } from "./types";
+export type {
+  Database,
+  Json,
+  Tables,
+  TablesInsert,
+  TablesUpdate,
+} from "./types";
