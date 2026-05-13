@@ -10,7 +10,7 @@ Estado actual del deployment por fase. Se actualiza al cerrar cada fase.
 | 1 | DB + Auth + Supabase Cloud | ✅ Completada | Proyecto cloud creado, schema completo aplicado, auth + RLS verificados con curl. Build local OOM por presión de RAM/disco del Mac → validación delegada a GitHub Actions. |
 | 2 | Mock data | ✅ Completada | 4 jobs + 30 candidates + 30 profiles + 30 applications + embeddings OpenAI 1536d. Distribución de etapas alineada con sección 7.2 del prompt. |
 | 3 | Job Analyzer + `/try-it-now` + Vercel | ✅ Completada | Producción en `talentforge-poc.vercel.app`; `/try-it-now` streamea ICP por SSE desde Claude Haiku 4.5. Auto-deploy GitHub pendiente (manual GitHub App install). |
-| 4 | Candidate Ranker | ⏳ Pendiente | — |
+| 4 | Candidate Ranker | ✅ Completada | 30/30 candidatos scoreados con Claude Haiku 4.5. Mean 71.7, distribución 7 strong_yes / 13 yes / 4 maybe / 6 no. Sanitización anti-bias activa. UI /jobs/[id] y /candidates/[id] funcionales. |
 | 5 | Transcripciones (12) | ⏳ Pendiente | — |
 | 6 | Interview Analyzer + PDF | ⏳ Pendiente | — |
 | 7 | Reporte comparativo + Question Generator | ⏳ Pendiente | — |
@@ -168,6 +168,56 @@ Estado actual del deployment por fase. Se actualiza al cerrar cada fase.
   3. Volver al dashboard Vercel del proyecto → Settings → Git → conectar repo.
 - Una vez conectado: push a `main` → producción automática, PR → preview deploy.
 - Mientras tanto: `pnpm dlx vercel@latest deploy --prod --yes` (manual desde local).
+
+## Fase 4 — detalle
+
+### Candidate Ranker Agent
+- ✅ [`sanitize.ts`](../packages/agents/sanitize.ts): redacta `full_name` (y sus partes),
+  `university`, `gender` antes de cualquier llamada al LLM. Reemplaza con
+  `<CANDIDATE>` / `<UNIVERSITY>`. Email reducido a hash legible para joinability.
+- ✅ Prompt: [`candidate-ranker.md`](../packages/agents/prompts/candidate-ranker.md) +
+  inline `.ts`. Contrato anti-bias explícito en el system prompt.
+- ✅ Schema Zod: `overall_score (0-100)`, `skill_breakdown[]` con
+  `{name, required_years, candidate_years, score, evidence}`, `match_reasoning`,
+  `gaps[]`, `strengths[]`, `recommendation`.
+- ✅ Runner: single-shot (no streaming) con prefill `{`, `max_tokens=4000`,
+  validación Zod estricta. Coerce float→int para skill_breakdown numerics.
+
+### Bulk scoring
+- ✅ [`scripts/score-candidates.ts`](../scripts/score-candidates.ts):
+  itera applications del tenant demo, llama al Ranker, persiste
+  `match_score`/`match_breakdown`/`match_reasoning` y registra trace en
+  `agent_traces`.
+- ✅ Flags: `--only <slug>` y `--resume` (skip los que ya tienen score).
+- ✅ Cobertura final: **30/30 candidatos** scoreados.
+
+### Distribución de scores
+| Bucket | Count |
+|--------|-------|
+| strong_yes (85+) | 7 |
+| yes (70-84) | 13 |
+| maybe (50-69) | 4 |
+| no (0-49) | 6 |
+
+Mean 71.7, min 38, max 94. La distribución cae naturalmente cerca de la
+calibración del seed (3 recommended por job son los mejor scoreados).
+
+### UI agregada
+- ✅ [`/jobs/[id]`](../apps/web/app/(app)/jobs/[id]/page.tsx) con tabs
+  URL-driven (`?tab=candidatos|icp|outreach|reporte`). Tab **Candidatos**
+  funcional: tabla con score como progress bar, recomendación coloreada,
+  filtro por etapa, link a perfil. ICP muestra raw JD; Outreach + Reporte
+  comparativo son placeholders hasta Fase 7/8.
+- ✅ [`/candidates/[id]`](../apps/web/app/(app)/candidates/[id]/page.tsx)
+  con header (etapa, contacto, LinkedIn), Match Card (score + reasoning +
+  gaps/strengths + tabla de cobertura por skill con evidencia), summary y
+  experiencia. `?job=<id>` selecciona qué application mostrar si hay varias.
+- ✅ `/dashboard` actualizado: 4 cards de jobs con métricas por etapa,
+  enlace a `/jobs/[id]`, mejor score destacado, métrica "horas ahorradas"
+  y CTA a `/try-it-now`.
+
+### Costo estimado
+~30 llamadas a Haiku 4.5 + reintentos ≈ $0.10 USD.
 
 ## Secretos esperados
 

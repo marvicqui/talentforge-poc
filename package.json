@@ -16,6 +16,7 @@
     "test": "turbo run test",
     "seed": "tsx scripts/seed-demo.ts",
     "seed:reset": "tsx scripts/reset-demo.ts",
+    "score": "tsx scripts/score-candidates.ts",
     "db:types": "supabase gen types typescript --linked > packages/db/types.ts"
   },
   "dependencies": {
