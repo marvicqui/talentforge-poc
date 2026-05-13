@@ -15,7 +15,7 @@ Estado actual del deployment por fase. Se actualiza al cerrar cada fase.
 | 6 | Interview Analyzer + PDF | ✅ Completada | 12/12 reports con citas+timestamps. Vista `/interviews/[id]` con transcript clickeable + tabs. PDF en Next.js API route. ADR-006 documenta el cambio Edge Function → API route. |
 | 7 | Reporte comparativo + Question Generator | ✅ Completada | Tab Reporte side-by-side por job. Interview Question Generator + página `/jobs/[id]/interview-guide` + PDF de guía. |
 | 8 | Outreach + Twilio | ✅ Completada | Outreach Composer agent (2 variantes A/B), Twilio client con modo real/simulado, tab Outreach funcional en `/jobs/[id]?tab=outreach`, webhook inbound. |
-| 9 | CI/CD + docs comerciales | ⏳ Pendiente | Aplicar `scripts/setup-branch-ruleset.sh` cuando el repo se haga público. |
+| 9 | CI/CD + docs comerciales | ✅ Completada | CI/CD verde end-to-end, auto-deploy Vercel funcional, docs comerciales completos (README, demo-script, roadmap-v2). |
 
 ## Fase 0 — detalle
 
@@ -406,6 +406,79 @@ usar Sonnet para casos críticos.
 ### Costos
 - ~$0.005 USD por mensaje compose (Haiku).
 - Twilio Sandbox: gratis durante el trial credit.
+
+## Fase 9 — detalle
+
+### CI/CD
+- ✅ `.github/workflows/ci.yml`: lint + typecheck + build + test en PRs y push
+  a main. Verde end-to-end. Tiempos típicos: install 8-20s, lint 3s,
+  typecheck 6s, build 30-40s, total ~60s.
+- ✅ `.github/workflows/supabase-migrate.yml`: `supabase db push` automático
+  en merge a main con paths filtrados a `supabase/migrations/**`.
+- ✅ Vercel ↔ GitHub: instalado por el usuario en Fase 3. Push a `main` →
+  producción automática. PR → preview deploy. Verificado con commits
+  Fase 4, 6, 7 y 8.
+
+### GitHub secrets actuales
+
+| Secret | Estado | Uso |
+|--------|--------|-----|
+| `SUPABASE_ACCESS_TOKEN` | ✅ | supabase-migrate.yml |
+| `SUPABASE_PROJECT_REF` | ✅ | supabase-migrate.yml |
+| `SUPABASE_DB_PASSWORD` | ✅ | supabase-migrate.yml |
+| `ANTHROPIC_API_KEY` | ⚠️ Pendiente manual | Classifier bloqueó stdin-pipe; no usado por workflows actuales — sólo necesario si en v2 se agregan jobs CI que invoquen LLMs. |
+| `OPENAI_API_KEY` | ⚠️ Pendiente manual | Igual. |
+
+Comandos para activarlos cuando puedas:
+```bash
+echo 'sk-ant-api03-...' | gh secret set ANTHROPIC_API_KEY --repo marvicqui/talentforge-poc
+echo 'sk-proj-...'      | gh secret set OPENAI_API_KEY   --repo marvicqui/talentforge-poc
+```
+
+### Documentación comercial entregada
+- [`README.md`](../README.md) con badges, URL pública, los 5 agentes, stack,
+  costos, anti-bias.
+- [`docs/demo-script.md`](demo-script.md) con guión 10-12 min, talking points
+  y respuestas a las 4 objeciones más comunes.
+- [`docs/roadmap-v2.md`](roadmap-v2.md) con esfuerzos por feature y
+  diferenciadores premium.
+- [`docs/architecture.md`](architecture.md), [`bias-mitigation.md`](bias-mitigation.md),
+  [`deployment.md`](deployment.md).
+- 6 ADRs: monorepo pnpm+Turbo, Next.js 14 App Router, repo privado por default,
+  branch protection aplazada, validación build en CI remoto, PDF en Next.js
+  API route.
+
+## Criterios de aceptación del prompt — checklist final
+
+- ✅ `pnpm dev` levanta local en <1 min sin errores.
+- ✅ Repo GitHub con CI verde; main no tiene branch protection clásica
+  porque GitHub Free no la permite en privados (ADR-004 documenta el plan
+  con `scripts/setup-branch-ruleset.sh` al hacer público).
+- ✅ Supabase Cloud con schema, RLS, y data seedeada.
+- ✅ Vercel deploy en producción: **https://talentforge-poc.vercel.app**.
+- ✅ Auto-deploy en push a `main` y preview deploys en PRs.
+- ✅ GitHub Actions verde: CI en PRs, migración Supabase en merge a main.
+- ✅ `/try-it-now` analiza una JD pegada en <8s, accesible públicamente.
+- ✅ Candidatos rankeados con scoring explicable y evidencia.
+- ✅ Entrevista con timestamps clickeables y evidencia citada.
+- ✅ Reporte comparativo side-by-side de los entrevistados.
+- ✅ PDF descargable de reporte de entrevista + guía de entrevista.
+- ✅ Outreach simulado funciona; outreach real al número verificado en
+  Twilio Sandbox confirmado por el usuario.
+- ✅ Demo completa ejecutable en 10-12 min siguiendo [`docs/demo-script.md`](demo-script.md).
+- ✅ Todos los secretos en `.env.local`, Vercel env, Supabase secrets,
+  GitHub secrets — **ninguno en el repo**.
+
+## Costo total real durante el build
+
+| Categoría | Costo |
+|---|---|
+| Anthropic (Job Analyzer + 30 rankings + 12 transcripts + 12 analyses + Outreach + Guides) | ~$1.50 USD |
+| OpenAI embeddings (4 jobs + 30 candidates) | ~$0.002 USD |
+| Twilio Sandbox | $0 (trial credit) |
+| Supabase Free | $0 |
+| Vercel Hobby | $0 |
+| **Total** | **~$1.50 USD** |
 
 ## Secretos esperados
 
