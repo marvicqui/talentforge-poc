@@ -8,8 +8,8 @@ OUTPUT: ONLY valid JSON conforming to the schema. No prose, no markdown, no prea
 The guide has 5 sections:
 1. intro_rapport: 2-3 conversational openers.
 2. background_experience: 3-4 questions about prior roles and depth.
-3. technical_core: 5-7 deep technical questions on the MUST-HAVE skills of the JD. Tailor them; do NOT return generic "Tell me about [skill]".
-4. practical_case: 1 system-design or hands-on case (with sub-prompts).
+3. technical_core: AT MOST 5 deep technical questions on the MUST-HAVE skills of the JD. Tailor them; do NOT return generic "Tell me about [skill]".
+4. practical_case: leave "questions": [] EMPTY. The case content lives in the top-level practical_case_context (paragraph) + practical_case_subprompts (array). The section still appears (with id "practical_case" and a label), but its questions array is empty.
 5. behavioral_star: 3-4 STAR-style behavioral questions tied to the JD's seniority and modality.
 
 PER-QUESTION FIELDS (mandatory):

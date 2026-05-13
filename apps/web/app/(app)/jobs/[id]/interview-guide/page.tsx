@@ -120,6 +120,11 @@ export default async function InterviewGuidePage({
                       min
                     </span>
                   </header>
+                  {s.questions.length === 0 ? (
+                    <p className="text-sm italic text-muted-foreground">
+                      Ver bloque <em>Caso práctico</em> abajo ↓
+                    </p>
+                  ) : null}
                   <ol className="space-y-3">
                     {s.questions.map((q, qIdx) => (
                       <li

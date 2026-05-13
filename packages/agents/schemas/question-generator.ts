@@ -27,7 +27,10 @@ export const QuestionGeneratorOutputSchema = z.object({
       z.object({
         id: SectionIdEnum,
         label: z.string().min(2),
-        questions: z.array(InterviewQuestionSchema).min(1).max(10),
+        // `practical_case` carries content in practical_case_context +
+        // practical_case_subprompts at the top level, so its `questions`
+        // array is allowed to be empty.
+        questions: z.array(InterviewQuestionSchema).min(0).max(10),
       }),
     )
     .min(3)
