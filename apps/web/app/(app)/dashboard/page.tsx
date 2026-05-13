@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { DashboardCharts } from "@/components/dashboard-charts";
 import { fmtModality, fmtSalary, fmtStage, scoreColorClass } from "@/lib/format";
 
 export const metadata = { title: "Dashboard — TalentForge AI" };
@@ -50,6 +51,31 @@ export default async function DashboardPage() {
   const interviewsAnalyzed = 12; // becomes dynamic in Fase 6
   const hoursSaved = Math.round(interviewsAnalyzed * 2.5);
 
+  // Aggregations for the dashboard charts.
+  const [{ data: appAgg }, { data: candAgg }] = await Promise.all([
+    supabase.from("applications").select("stage, match_score"),
+    supabase.from("candidates").select("country"),
+  ]);
+  const stages: Record<string, number> = {};
+  for (const a of appAgg ?? []) {
+    stages[a.stage] = (stages[a.stage] ?? 0) + 1;
+  }
+  const countries: Record<string, number> = {};
+  for (const c of candAgg ?? []) {
+    if (c.country) countries[c.country] = (countries[c.country] ?? 0) + 1;
+  }
+  const scoreBuckets = [
+    { label: "Strong yes (85+)", min: 85, count: 0, color: "#059669" },
+    { label: "Yes (70-84)", min: 70, count: 0, color: "#10b981" },
+    { label: "Maybe (50-69)", min: 50, count: 0, color: "#f59e0b" },
+    { label: "No (0-49)", min: 0, count: 0, color: "#dc2626" },
+  ];
+  for (const a of appAgg ?? []) {
+    if (a.match_score == null) continue;
+    const b = scoreBuckets.find((x) => a.match_score! >= x.min);
+    if (b) b.count += 1;
+  }
+
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-6xl px-6 py-10 space-y-8">
@@ -70,6 +96,13 @@ export default async function DashboardPage() {
             >
               + Crear vacante
             </Link>
+            <Link
+              href="/audit"
+              className="inline-flex items-center justify-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-secondary"
+              title="Cada llamada al LLM con input redactado, output, latencia y costo"
+            >
+              Audit log
+            </Link>
             <form action="/auth/sign-out" method="post">
               <button
                 type="submit"
@@ -80,6 +113,12 @@ export default async function DashboardPage() {
             </form>
           </div>
         </header>
+
+        <DashboardCharts
+          stages={stages}
+          countries={countries}
+          scoreBuckets={scoreBuckets}
+        />
 
         <section className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Metric label="Vacantes activas" value={jobs?.length ?? 0} />
