@@ -63,14 +63,22 @@ export default async function DashboardPage() {
             </h1>
             <p className="text-sm text-muted-foreground">{profile?.email}</p>
           </div>
-          <form action="/auth/sign-out" method="post">
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-secondary"
+          <div className="flex items-center gap-2">
+            <Link
+              href="/jobs/new"
+              className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
-              Cerrar sesión
-            </button>
-          </form>
+              + Crear vacante
+            </Link>
+            <form action="/auth/sign-out" method="post">
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-secondary"
+              >
+                Cerrar sesión
+              </button>
+            </form>
+          </div>
         </header>
 
         <section className="grid grid-cols-1 sm:grid-cols-4 gap-4">

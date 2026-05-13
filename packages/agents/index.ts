@@ -68,3 +68,12 @@ export {
   type OutreachComposerOutput,
   type OutreachVariant,
 } from "./schemas/outreach-composer";
+
+export {
+  parseCv,
+  type ParseCvOptions,
+} from "./runners/cv-parser";
+export {
+  CvParserOutputSchema,
+  type CvParserOutput,
+} from "./schemas/cv-parser";

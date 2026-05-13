@@ -110,12 +110,20 @@ export default async function JobPage({
               {job.english_min_cefr ?? "—"} · {(apps?.length ?? 0)} candidatos
             </p>
           </div>
-          <Link
-            href={`/jobs/${job.id}/interview-guide`}
-            className="inline-flex items-center justify-center rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
-          >
-            Guía de entrevista →
-          </Link>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href={`/jobs/${job.id}/import`}
+              className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              + Subir CVs
+            </Link>
+            <Link
+              href={`/jobs/${job.id}/interview-guide`}
+              className="inline-flex items-center justify-center rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+            >
+              Guía de entrevista →
+            </Link>
+          </div>
         </header>
 
         <nav className="flex flex-wrap gap-1 border-b border-border">
