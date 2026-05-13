@@ -300,24 +300,23 @@ async function OutreachTabSection({ jobId }: { jobId: string }) {
       .filter(Boolean),
   );
 
-  const rows: OutreachAppRow[] = (apps ?? [])
-    .map((a) => {
-      const c = a.candidates;
-      if (!c) return null;
-      const breakdown = a.match_breakdown as { recommendation?: string } | null;
-      return {
-        applicationId: a.id,
-        candidateId: c.id,
-        candidateName: c.full_name,
-        country: c.country,
-        phoneE164: c.phone_e164,
-        recommendation: breakdown?.recommendation ?? null,
-        stage: a.stage,
-        isVerifiedNumber: c.phone_e164 ? verified.has(c.phone_e164) : false,
-        lastOutboundAt: null,
-      } satisfies OutreachAppRow;
-    })
-    .filter((r): r is OutreachAppRow => r !== null);
+  const rows: OutreachAppRow[] = (apps ?? []).flatMap((a) => {
+    const c = a.candidates;
+    if (!c) return [];
+    const breakdown = a.match_breakdown as { recommendation?: string } | null;
+    const row: OutreachAppRow = {
+      applicationId: a.id,
+      candidateId: c.id,
+      candidateName: c.full_name,
+      country: c.country,
+      phoneE164: c.phone_e164,
+      recommendation: breakdown?.recommendation ?? null,
+      stage: a.stage,
+      isVerifiedNumber: c.phone_e164 ? verified.has(c.phone_e164) : false,
+      lastOutboundAt: null,
+    };
+    return [row];
+  });
 
   return <OutreachTab rows={rows} />;
 }
