@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DeleteWithConfirm } from "@/components/delete-with-confirm";
 import { ScoreExplainer } from "@/components/score-explainer";
+import { LiveRankPanel } from "@/components/live-rank-panel";
 import { ShareButton } from "@/components/share-button";
 import {
   fmtRecommendation,
@@ -283,6 +284,8 @@ function MatchCard({
           <ShareButton path={`/share/match/${applicationId}`} />
         </div>
       </header>
+
+      <LiveRankPanel applicationId={applicationId} />
 
       {reasoning ? (
         <p className="text-sm text-card-foreground/90">{reasoning}</p>

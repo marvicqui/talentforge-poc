@@ -18,6 +18,11 @@ export {
   type JobForRanker,
 } from "./runners/candidate-ranker";
 export {
+  rankCandidateStream,
+  type RankCandidateStreamOptions,
+  type RankCandidateStreamEvent,
+} from "./runners/candidate-ranker-stream";
+export {
   CandidateRankerOutputSchema,
   type CandidateRankerOutput,
   type Recommendation,
