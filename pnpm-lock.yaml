@@ -60,6 +60,9 @@ importers:
       '@talentforge/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@talentforge/twilio':
+        specifier: workspace:*
+        version: link:../../packages/integrations/twilio
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1

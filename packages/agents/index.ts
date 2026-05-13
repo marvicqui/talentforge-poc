@@ -57,3 +57,14 @@ export {
   type InterviewQuestion,
   type SectionId,
 } from "./schemas/question-generator";
+
+export {
+  composeOutreach,
+  type ComposeOutreachOptions,
+} from "./runners/outreach-composer";
+export {
+  OutreachComposerOutputSchema,
+  OutreachVariantSchema,
+  type OutreachComposerOutput,
+  type OutreachVariant,
+} from "./schemas/outreach-composer";

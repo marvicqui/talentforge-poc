@@ -14,7 +14,7 @@ Estado actual del deployment por fase. Se actualiza al cerrar cada fase.
 | 5 | Transcripciones (12) | ✅ Completada | 12/12 transcripciones diarizadas (23-49 min cada una) calibradas 1 strong_yes / 1 yes / 1 maybe_no por job. 11 mixed-language, 1 español puro. Avg ~16K chars (~2500 palabras). |
 | 6 | Interview Analyzer + PDF | ✅ Completada | 12/12 reports con citas+timestamps. Vista `/interviews/[id]` con transcript clickeable + tabs. PDF en Next.js API route. ADR-006 documenta el cambio Edge Function → API route. |
 | 7 | Reporte comparativo + Question Generator | ✅ Completada | Tab Reporte side-by-side por job. Interview Question Generator + página `/jobs/[id]/interview-guide` + PDF de guía. |
-| 8 | Outreach + Twilio | ⏳ Pendiente | Requiere credenciales Twilio y número verificado. |
+| 8 | Outreach + Twilio | ✅ Completada | Outreach Composer agent (2 variantes A/B), Twilio client con modo real/simulado, tab Outreach funcional en `/jobs/[id]?tab=outreach`, webhook inbound. |
 | 9 | CI/CD + docs comerciales | ⏳ Pendiente | Aplicar `scripts/setup-branch-ruleset.sh` cuando el repo se haga público. |
 
 ## Fase 0 — detalle
@@ -355,6 +355,57 @@ usar Sonnet para casos críticos.
 ### Costos
 - ~$0.02 USD por guía. Generación on-demand (no se precomputa para los 4
   jobs por default; el usuario hace click cuando lo necesita).
+
+## Fase 8 — detalle
+
+### Outreach Composer Agent (3er oficial)
+- Prompt: [`outreach-composer.md`](../packages/agents/prompts/outreach-composer.md)
+  + `.ts`. Salida: 2 variantes A/B (≤1024 chars), español neutro LATAM,
+  personalizado con 1-2 detalles (skill + años o última empresa). **Variante A**
+  estilo directo; **Variante B** estilo consultivo. NUNCA usa género, edad ni
+  universidad.
+- Schema Zod ([`outreach-composer.ts`](../packages/agents/schemas/outreach-composer.ts)).
+- Runner: single-shot Anthropic con prefill `{`.
+
+### Twilio client
+- [`packages/integrations/twilio/client.ts`](../packages/integrations/twilio/client.ts):
+  `sendWhatsAppMessage({ to, body })`.
+  - Si `to` está en `TWILIO_SANDBOX_VERIFIED_NUMBERS` (E.164 comma-list) **y**
+    hay creds → envía real con Twilio SDK; retorna `{status:'sent', sid}`.
+  - Si no → `{status:'simulated', sid:null}`.
+
+### API endpoints (Node runtime, auth-checked)
+- ✅ `POST /api/outreach/compose` — recibe `applicationId`, devuelve las 2
+  variantes A/B con conteo de chars y notas de personalización.
+- ✅ `POST /api/outreach/send` — recibe `applicationId + message + variantTag`,
+  guarda en `outreach_messages`, asegura `conversations` row, intenta envío
+  Twilio o lo simula, y avanza `applications.stage` de new/interested →
+  contacted.
+- ✅ `POST /api/webhook/twilio` — recibe form-encoded inbound, busca el
+  candidato por `phone_e164`, inserta inbound en `outreach_messages` y
+  actualiza state de `conversations`. Responde TwiML vacío `<Response/>`.
+
+### Tab Outreach en /jobs/[id]?tab=outreach
+- Server Component carga applications con stages `new`, `interested`,
+  `contacted` y arma rows con `isVerifiedNumber` (chequea
+  `TWILIO_SANDBOX_VERIFIED_NUMBERS` server-side).
+- Client component [`outreach-tab.tsx`](../apps/web/app/(app)/jobs/[id]/outreach-tab.tsx):
+  cada row tiene botón "Generar mensajes" → llama compose; muestra 2 cards
+  A/B con textarea editable + contador chars + botón Enviar; status real-time.
+- Badges visuales: "✓ verified (envío real)" vs "modo simulado".
+
+### Setup adicional para envío real
+1. En [Twilio Console → Messaging → Try it out → Send a WhatsApp message](https://console.twilio.com/us1/develop/sms/try-it-out/whatsapp-learn),
+   anotar la palabra clave del sandbox.
+2. Desde tu WhatsApp, enviar `join <palabra-clave>` al `+1 415 523 8886`.
+3. Tu número quedó en `TWILIO_SANDBOX_VERIFIED_NUMBERS=+5219212394499`.
+4. Para inbound: configurar webhook en Console → Sandbox Settings → "When a
+   message comes in" =
+   `https://talentforge-poc.vercel.app/api/webhook/twilio` (POST).
+
+### Costos
+- ~$0.005 USD por mensaje compose (Haiku).
+- Twilio Sandbox: gratis durante el trial credit.
 
 ## Secretos esperados
 

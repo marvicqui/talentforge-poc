@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { OutreachTab, type OutreachAppRow } from "./outreach-tab";
 import {
   fmtModality,
   fmtRecommendation,
@@ -141,9 +142,7 @@ export default async function JobPage({
           <CandidatesTab jobId={job.id} apps={apps ?? []} />
         ) : null}
         {tab === "icp" ? <IcpTab description={job.description_raw} /> : null}
-        {tab === "outreach" ? (
-          <PlaceholderTab text="El módulo de Outreach llega en Fase 8 (Twilio WhatsApp Sandbox)." />
-        ) : null}
+        {tab === "outreach" ? <OutreachTabSection jobId={job.id} /> : null}
         {tab === "reporte" ? (
           <ComparisonTab jobId={job.id} />
         ) : null}
@@ -280,6 +279,47 @@ function IcpTab({ description }: { description: string }) {
       </p>
     </section>
   );
+}
+
+async function OutreachTabSection({ jobId }: { jobId: string }) {
+  const supabase = createClient();
+  const { data: apps } = await supabase
+    .from("applications")
+    .select(
+      `id, stage, candidate_id, match_breakdown,
+       candidates (id, full_name, country, phone_e164)`,
+    )
+    .eq("job_id", jobId)
+    .in("stage", ["new", "interested", "contacted"])
+    .order("match_score", { ascending: false, nullsFirst: false });
+
+  const verified = new Set(
+    (process.env.TWILIO_SANDBOX_VERIFIED_NUMBERS ?? "")
+      .split(",")
+      .map((n) => n.trim())
+      .filter(Boolean),
+  );
+
+  const rows: OutreachAppRow[] = (apps ?? [])
+    .map((a) => {
+      const c = a.candidates;
+      if (!c) return null;
+      const breakdown = a.match_breakdown as { recommendation?: string } | null;
+      return {
+        applicationId: a.id,
+        candidateId: c.id,
+        candidateName: c.full_name,
+        country: c.country,
+        phoneE164: c.phone_e164,
+        recommendation: breakdown?.recommendation ?? null,
+        stage: a.stage,
+        isVerifiedNumber: c.phone_e164 ? verified.has(c.phone_e164) : false,
+        lastOutboundAt: null,
+      } satisfies OutreachAppRow;
+    })
+    .filter((r): r is OutreachAppRow => r !== null);
+
+  return <OutreachTab rows={rows} />;
 }
 
 function PlaceholderTab({ text }: { text: string }) {
