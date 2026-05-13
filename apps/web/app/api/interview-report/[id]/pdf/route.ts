@@ -64,7 +64,8 @@ export async function GET(
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")}.pdf`;
 
-  return new Response(buf, {
+  // Wrap Node Buffer as Uint8Array to satisfy BodyInit typings.
+  return new Response(new Uint8Array(buf), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename="${filename}"`,
