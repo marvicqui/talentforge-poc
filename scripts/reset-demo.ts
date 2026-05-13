@@ -1,5 +1,8 @@
-// Truncate demo tables (preserves schema). Implemented in Fase 2.
-async function main() {
-  console.log("[reset-demo] Pending implementation (Fase 2).");
-}
-main();
+/**
+ * Convenience wrapper. Equivalent to `pnpm seed -- --reset`.
+ * Truncates the demo tenant tables and re-seeds everything.
+ *
+ * Just delegates to seed-demo.ts with the --reset flag.
+ */
+process.argv.push("--reset");
+await import("./seed-demo");

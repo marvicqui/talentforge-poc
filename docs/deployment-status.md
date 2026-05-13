@@ -8,7 +8,7 @@ Estado actual del deployment por fase. Se actualiza al cerrar cada fase.
 |------|-------------|--------|-------|
 | 0 | Bootstrap + GitHub | ✅ Completada | Monorepo verde local; repo en GitHub privado. Branch protection aplazada (ADR-004). |
 | 1 | DB + Auth + Supabase Cloud | ✅ Completada | Proyecto cloud creado, schema completo aplicado, auth + RLS verificados con curl. Build local OOM por presión de RAM/disco del Mac → validación delegada a GitHub Actions. |
-| 2 | Mock data | ⏳ Pendiente | Requiere `ANTHROPIC_API_KEY` + embeddings provider. |
+| 2 | Mock data | ✅ Completada | 4 jobs + 30 candidates + 30 profiles + 30 applications + embeddings OpenAI 1536d. Distribución de etapas alineada con sección 7.2 del prompt. |
 | 3 | Job Analyzer + `/try-it-now` + Vercel | ⏳ Pendiente | Requiere `VERCEL_TOKEN`. |
 | 4 | Candidate Ranker | ⏳ Pendiente | — |
 | 5 | Transcripciones (12) | ⏳ Pendiente | — |
@@ -78,6 +78,49 @@ Estado actual del deployment por fase. Se actualiza al cerrar cada fase.
   `conoce-tu-mexico-whatsapp`, `nice-joyeria-prod`); para crear este proyecto se
   borró un `TalentForge_AI` accidental (West US) y se recreó en `us-east-1`.
 
+## Fase 2 — detalle
+
+### Mock data
+- ✅ **4 vacantes** en `public.jobs` con descripciones full (400-600 palabras),
+  must/nice-to-have, oferta, proceso. Ver
+  [`scripts/seed/jobs.ts`](../scripts/seed/jobs.ts).
+- ✅ **30 candidatos** con perfiles coherentes en
+  [`scripts/seed/candidates.ts`](../scripts/seed/candidates.ts) — nombres LATAM
+  verosímiles, skills + years per skill, experience plausible, summary 250-350
+  palabras.
+- ✅ Distribución por vacante (8/7/8/7) y por etapa: 12 recommended (3 por job),
+  5 scheduled, 4 interested, 4 new, 3 interviewed, 2 contacted. Alineada con
+  sección 7.2 del prompt.
+- ✅ CEFR mezclado por vacante según el spec (A2 hasta C2).
+- ✅ Anti-bias: campos `gender` y `university` se guardan en DB sólo para
+  realismo del demo, pero el wrapper del Candidate Ranker (Fase 4) los redactará
+  antes de cualquier llamada al LLM (ver [`docs/bias-mitigation.md`](bias-mitigation.md)).
+
+### Embeddings
+- ✅ Provider: **OpenAI** (`text-embedding-3-small`, 1536 dim).
+- ✅ Helper: [`scripts/seed/embeddings.ts`](../scripts/seed/embeddings.ts) con
+  batch ≤96 inputs.
+- ✅ Pre-computados para los 4 jobs (`jobs.embedding`) y los 30 perfiles
+  (`candidate_profiles.embedding`). El score IVF Flat
+  (`vector_cosine_ops`, lists=10) ya tiene data, listo para Fase 4.
+- ⚠️ Costo del seed: ~70K tokens de embeddings ≈ $0.0014 USD.
+
+### Comandos disponibles
+- `pnpm seed` — idempotente: upsert por slug (jobs) o por email (candidates).
+- `pnpm seed:reset` — wrapper de `pnpm seed -- --reset`; trunca primero.
+
+### Workaround conocido
+- `@supabase/realtime-js@2.105.4` falla en Node 20 por falta de `WebSocket`
+  nativo. El seed pasa `transport: ws` explícito en `createClient(...)`.
+  Vercel runtime (Node 22+) no necesita esto.
+
+### Smoke tests contra cloud (REST + service_role)
+| Test | Resultado |
+|------|-----------|
+| `GET /rest/v1/jobs?order=salary_max_usd.desc` | 4 jobs en orden esperado. |
+| `GET /rest/v1/applications?select=stage` | Counter: recommended=12, scheduled=5, interested=4, new=4, interviewed=3, contacted=2. |
+| Counts verificación interna (`pnpm seed`) | jobs:4, candidates:30, candidate_profiles:30, applications:30 ✓ |
+
 ## Secretos esperados
 
 | Destino | Secreto | Estado |
@@ -85,9 +128,11 @@ Estado actual del deployment por fase. Se actualiza al cerrar cada fase.
 | GitHub repo secrets | `SUPABASE_ACCESS_TOKEN` | ✅ |
 | GitHub repo secrets | `SUPABASE_PROJECT_REF` | ✅ |
 | GitHub repo secrets | `SUPABASE_DB_PASSWORD` | ✅ |
+| GitHub repo secrets | `ANTHROPIC_API_KEY` | ⚠️ Pendiente — clasificador de seguridad bloqueó `gh secret set -b`; corre `echo '<key>' \| gh secret set ANTHROPIC_API_KEY` manualmente. No es bloqueante hasta Fase 9 (sólo necesario en Vercel env). |
+| GitHub repo secrets | `OPENAI_API_KEY` | ⚠️ Pendiente — mismo motivo. No bloqueante. |
 | Vercel env (prod/preview/dev) | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | ⏳ Fase 3 |
 | Vercel env | `ANTHROPIC_API_KEY` | ⏳ Fase 3 |
-| Vercel env | `OPENAI_API_KEY` o `VOYAGE_API_KEY` | ⏳ Fase 2/3 |
+| Vercel env | `OPENAI_API_KEY` | ⏳ Fase 3 |
 | Vercel env | `TWILIO_*` | ⏳ Fase 8 |
 
 ## URLs
