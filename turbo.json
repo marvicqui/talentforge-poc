@@ -1,0 +1,42 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "outputs": []
+    },
+    "typecheck": {
+      "outputs": []
+    },
+    "test": {
+      "outputs": []
+    }
+  },
+  "globalEnv": [
+    "NODE_ENV",
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "SUPABASE_DB_URL",
+    "SUPABASE_PROJECT_REF",
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_MODEL",
+    "EMBEDDINGS_PROVIDER",
+    "OPENAI_API_KEY",
+    "VOYAGE_API_KEY",
+    "TWILIO_ACCOUNT_SID",
+    "TWILIO_AUTH_TOKEN",
+    "TWILIO_WA_FROM",
+    "TWILIO_SANDBOX_VERIFIED_NUMBERS",
+    "NEXT_PUBLIC_APP_URL",
+    "DEMO_USER_EMAIL",
+    "SALES_CALENDLY_URL"
+  ]
+}

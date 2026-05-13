@@ -1,0 +1,26 @@
+{
+  "name": "talentforge-poc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TalentForge AI — PoC para demos comerciales de reclutamiento con agentes",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "seed": "tsx scripts/seed-demo.ts",
+    "db:types": "supabase gen types typescript --linked > packages/db/types.ts"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.4.5",
+    "tsx": "^4.19.2",
+    "@types/node": "^20.14.0"
+  }
+}
