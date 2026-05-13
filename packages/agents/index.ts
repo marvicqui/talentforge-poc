@@ -44,3 +44,16 @@ export {
   type InterviewAnalyzerOutput,
   type EvidenceQuote,
 } from "./schemas/interview-analyzer";
+
+export {
+  generateInterviewGuide,
+  type GenerateQuestionsOptions,
+} from "./runners/question-generator";
+export {
+  QuestionGeneratorOutputSchema,
+  InterviewQuestionSchema,
+  SectionIdEnum,
+  type QuestionGeneratorOutput,
+  type InterviewQuestion,
+  type SectionId,
+} from "./schemas/question-generator";

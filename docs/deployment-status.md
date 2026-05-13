@@ -13,7 +13,7 @@ Estado actual del deployment por fase. Se actualiza al cerrar cada fase.
 | 4 | Candidate Ranker | ✅ Completada | 30/30 candidatos scoreados con Claude Haiku 4.5. Mean 71.7, distribución 7 strong_yes / 13 yes / 4 maybe / 6 no. Sanitización anti-bias activa. UI /jobs/[id] y /candidates/[id] funcionales. |
 | 5 | Transcripciones (12) | ✅ Completada | 12/12 transcripciones diarizadas (23-49 min cada una) calibradas 1 strong_yes / 1 yes / 1 maybe_no por job. 11 mixed-language, 1 español puro. Avg ~16K chars (~2500 palabras). |
 | 6 | Interview Analyzer + PDF | ✅ Completada | 12/12 reports con citas+timestamps. Vista `/interviews/[id]` con transcript clickeable + tabs. PDF en Next.js API route. ADR-006 documenta el cambio Edge Function → API route. |
-| 7 | Reporte comparativo + Question Generator | ⏳ Pendiente | — |
+| 7 | Reporte comparativo + Question Generator | ✅ Completada | Tab Reporte side-by-side por job. Interview Question Generator + página `/jobs/[id]/interview-guide` + PDF de guía. |
 | 8 | Outreach + Twilio | ⏳ Pendiente | Requiere credenciales Twilio y número verificado. |
 | 9 | CI/CD + docs comerciales | ⏳ Pendiente | Aplicar `scripts/setup-branch-ruleset.sh` cuando el repo se haga público. |
 
@@ -318,6 +318,43 @@ usar Sonnet para casos críticos.
 
 ### Costos
 - 12 análisis con Claude Haiku 4.5 ≈ $0.20 USD.
+
+## Fase 7 — detalle
+
+### Interview Question Generator Agent (5to agente oficial)
+- ✅ Prompt: [`question-generator.md`](../packages/agents/prompts/question-generator.md) + `.ts`.
+- ✅ Schema Zod: 5 secciones (intro_rapport, background_experience,
+  technical_core, practical_case, behavioral_star). Cada pregunta lleva
+  `intent`, `time_minutes`, `what_to_look_for`, `good_answer_signals`,
+  `weak_answer_signals`, `red_flag_signals`. Diseñado para reclutador no
+  técnico.
+- ✅ Runner: single-shot, max_tokens 6500.
+
+### Persistencia
+- `jobs.ideal_profile` jsonb almacena
+  `{interview_guide, interview_guide_generated_at}`.
+- Server action [`regenerateGuide`](../apps/web/app/(app)/jobs/[id]/interview-guide/actions.ts)
+  con auth check → llama al agente → upsert vía admin client.
+
+### UI
+- ✅ Página [`/jobs/[id]/interview-guide`](../apps/web/app/(app)/jobs/[id]/interview-guide/page.tsx)
+  con botón Generar / Regenerar; renderiza secciones, preguntas con tiempo
+  estimado y las 4 columnas de señales (buscar / sólida / débil / red flag),
+  caso práctico + sub-prompts.
+- ✅ Botón "Descargar PDF" →
+  [`/api/interview-guide/[id]/pdf`](../apps/web/app/api/interview-guide/[id]/pdf/route.ts)
+  con [`InterviewGuideDocument`](../apps/web/lib/pdf/interview-guide-document.tsx)
+  (`@react-pdf/renderer`).
+- ✅ Tab **Reporte comparativo** en `/jobs/[id]?tab=reporte`: tabla side-by-side
+  con todos los entrevistados que tienen reporte. Métricas: recomendación,
+  inglés evaluado, seniority, **score por skill (unión de skills evaluadas)**,
+  scores de soft skills, top 3 fortalezas y top 3 red flags. Cada nombre
+  linkea al detalle de entrevista.
+- ✅ Link "Guía de entrevista →" en el header de `/jobs/[id]`.
+
+### Costos
+- ~$0.02 USD por guía. Generación on-demand (no se precomputa para los 4
+  jobs por default; el usuario hace click cuando lo necesita).
 
 ## Secretos esperados
 
