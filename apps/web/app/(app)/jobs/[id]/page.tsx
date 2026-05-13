@@ -322,13 +322,6 @@ async function OutreachTabSection({ jobId }: { jobId: string }) {
   return <OutreachTab rows={rows} />;
 }
 
-function PlaceholderTab({ text }: { text: string }) {
-  return (
-    <section className="rounded-md border border-dashed border-border p-12 text-center">
-      <p className="text-sm text-muted-foreground">{text}</p>
-    </section>
-  );
-}
 
 async function ComparisonTab({ jobId }: { jobId: string }) {
   const supabase = createClient();
