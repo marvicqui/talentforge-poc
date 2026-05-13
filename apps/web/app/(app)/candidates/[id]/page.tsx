@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DeleteWithConfirm } from "@/components/delete-with-confirm";
 import { ScoreExplainer } from "@/components/score-explainer";
+import { ShareButton } from "@/components/share-button";
 import {
   fmtRecommendation,
   fmtStage,
@@ -144,6 +145,7 @@ export default async function CandidatePage({
 
         {app && app.jobs ? (
           <MatchCard
+            applicationId={app.id}
             jobId={app.jobs.id}
             jobTitle={app.jobs.title}
             companyName={app.jobs.company_name}
@@ -216,6 +218,7 @@ export default async function CandidatePage({
 }
 
 function MatchCard({
+  applicationId,
   jobId,
   jobTitle,
   companyName,
@@ -223,6 +226,7 @@ function MatchCard({
   reasoning,
   breakdown,
 }: {
+  applicationId: string;
   jobId: string;
   jobTitle: string;
   companyName: string;
@@ -231,7 +235,10 @@ function MatchCard({
   breakdown: MatchBreakdown | null;
 }) {
   return (
-    <section className="rounded-md border border-border bg-card p-5 space-y-4">
+    <section
+      data-ai-only
+      className="rounded-md border border-border bg-card p-5 space-y-4"
+    >
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -273,6 +280,7 @@ function MatchCard({
               {fmtRecommendation(breakdown.recommendation)}
             </span>
           ) : null}
+          <ShareButton path={`/share/match/${applicationId}`} />
         </div>
       </header>
 

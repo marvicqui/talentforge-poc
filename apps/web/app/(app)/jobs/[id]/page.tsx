@@ -217,8 +217,12 @@ function CandidatesTab({
               <th className="px-3 py-2 text-left">Inglés</th>
               <th className="px-3 py-2 text-left">Seniority</th>
               <th className="px-3 py-2 text-left">Etapa</th>
-              <th className="px-3 py-2 text-left w-56">Score</th>
-              <th className="px-3 py-2 text-left">Recomendación</th>
+              <th className="px-3 py-2 text-left w-56" data-ai-only>
+                Score
+              </th>
+              <th className="px-3 py-2 text-left" data-ai-only>
+                Recomendación
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -245,10 +249,10 @@ function CandidatesTab({
                   <td className="px-3 py-2 text-muted-foreground">{c.english_cefr ?? "—"}</td>
                   <td className="px-3 py-2 text-muted-foreground capitalize">{c.seniority ?? "—"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{fmtStage(a.stage)}</td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2" data-ai-only>
                     <ScoreBar score={a.match_score} />
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2" data-ai-only>
                     <span
                       className={
                         "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium " +
