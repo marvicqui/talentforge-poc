@@ -2,12 +2,15 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { DeleteWithConfirm } from "@/components/delete-with-confirm";
+import { ScoreExplainer } from "@/components/score-explainer";
 import {
   fmtRecommendation,
   fmtStage,
   recColorClass,
   scoreColorClass,
 } from "@/lib/format";
+import { deleteCandidateAction } from "./actions";
 
 type MatchBreakdown = {
   recommendation?: string;
@@ -115,16 +118,28 @@ export default async function CandidatePage({
               )}
             </p>
           </div>
-          {app ? (
-            <div className="flex flex-col items-end gap-1">
-              <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                Etapa
-              </span>
-              <span className="rounded-full border border-border bg-secondary px-3 py-1 text-sm font-medium text-secondary-foreground">
-                {fmtStage(app.stage)}
-              </span>
-            </div>
-          ) : null}
+          <div className="flex flex-col items-end gap-2">
+            {app ? (
+              <div className="flex flex-col items-end gap-1">
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Etapa
+                </span>
+                <span className="rounded-full border border-border bg-secondary px-3 py-1 text-sm font-medium text-secondary-foreground">
+                  {fmtStage(app.stage)}
+                </span>
+              </div>
+            ) : null}
+            <DeleteWithConfirm
+              action={deleteCandidateAction}
+              fields={{
+                candidateId: candidate.id,
+                returnJobId: app?.jobs?.id ?? "",
+              }}
+              confirmText={candidate.full_name}
+              label="Eliminar candidato"
+              warning={`Esto elimina al candidato "${candidate.full_name}" y, por cascade, su perfil, applications, entrevistas, transcripciones y reportes. No se puede deshacer.`}
+            />
+          </div>
         </header>
 
         {app && app.jobs ? (
@@ -219,9 +234,12 @@ function MatchCard({
     <section className="rounded-md border border-border bg-card p-5 space-y-4">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Match con
-          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+              Match con
+            </p>
+            <ScoreExplainer />
+          </div>
           <Link
             href={`/jobs/${jobId}`}
             className="text-lg font-medium text-card-foreground hover:underline"

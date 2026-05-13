@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { DeleteWithConfirm } from "@/components/delete-with-confirm";
+import { ScoreExplainer } from "@/components/score-explainer";
+import { deleteJobAction } from "./actions";
 import { OutreachTab, type OutreachAppRow } from "./outreach-tab";
 import {
   fmtModality,
@@ -123,6 +126,13 @@ export default async function JobPage({
             >
               Guía de entrevista →
             </Link>
+            <DeleteWithConfirm
+              action={deleteJobAction}
+              fields={{ jobId: job.id }}
+              confirmText={job.title}
+              label="Eliminar vacante"
+              warning={`Esto elimina la vacante "${job.title}" y, por cascade, todas sus applications, entrevistas, transcripciones y reportes. No se puede deshacer.`}
+            />
           </div>
         </header>
 
@@ -183,10 +193,11 @@ function CandidatesTab({
   const scored = apps.filter((a) => a.match_score != null).length;
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <p className="text-sm text-muted-foreground">
           {scored}/{apps.length} candidatos puntuados por IA. Ordenados por score.
         </p>
+        <ScoreExplainer />
       </div>
       <div className="overflow-x-auto rounded-md border border-border">
         <table className="w-full text-sm">
